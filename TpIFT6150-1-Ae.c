@@ -1,6 +1,7 @@
 /*------------------------------------------------------*/
 /* Prog    : TpIFT6150-1-Ae.c                           */
 /* Auteur  : Sylvain Bouchard                           */
+/* Courriel: bouchsyl@iro.umontreal.ca                  */
 /* Date    : 27/09/2010                                 */
 /* version :                                            */ 
 /* langage : C                                          */
@@ -57,7 +58,7 @@ float** squareImage(int length, int width, int size)
 int main(int argc,char **argv)
 {
     int i,j,k;
-    int length,width;
+    int length,width,tailleCarre;
     float** MatriceImgR;
     float** MatriceImgI;
     float** MatriceImgM;
@@ -65,7 +66,11 @@ int main(int argc,char **argv)
     // Generation d'une image carre blanc sur fond noir
     length = 128;
     width = 128;
-    MatriceImgR = squareImage(length, width, 16);
+
+    printf("Veuillez entrer la taille du carre: ");
+    scanf("%d", &tailleCarre);
+
+    MatriceImgR = squareImage(length, width, tailleCarre);
 
     // Sauvegarde de MatriceImgR sous forme d'image pgm
     SaveImagePgm(NAME_IMG_OUT,MatriceImgR,length,width);
