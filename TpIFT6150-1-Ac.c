@@ -1,6 +1,7 @@
 /*------------------------------------------------------*/
 /* Prog    : TpIFT6150-1-Ac.c                           */
 /* Auteur  : Sylvain Bouchard                           */
+/* Courriel: bouchsyl@iro.umontreal.ca                  */
 /* Date    : 27/09/2010                                 */
 /* version :                                            */ 
 /* langage : C                                          */
@@ -22,9 +23,9 @@
 /*------------------------------------------------*/
 #define NAME_IMG_IN  "images/D1r"
 
-#define NAME_IMG_OUT "image-TpIFT6150-1-Ab"
+#define NAME_IMG_OUT "image-TpIFT6150-1-Ac"
 
-void RecalLog(float** mat, int length, int width)
+float RecalLog(float** mat, int length, int width)
 {
     int i,j;
     float max,min;
@@ -40,11 +41,13 @@ void RecalLog(float** mat, int length, int width)
         if (mat[i][j]>max) max=mat[i][j];
 
     /* Calcule le facteur de calibation */
-    float c = GREY_LEVEL / log(max - min + 1);
+    float c = GREY_LEVEL / log10(max - min + 1);
 
     /*Recalibre la matrice*/
     for(i=0;i<length;i++) for(j=0;j<width;j++)
-        mat[i][j] = c * log(mat[i][j] + 1);
+        mat[i][j] = log10(mat[i][j] + 1);
+
+    return c;
 }
 
 /*------------------------------------------------*/
@@ -84,7 +87,6 @@ int main(int argc,char **argv)
         }
     }
 
-  
     /*FFT*/
     FFTDD(MatriceImgR,MatriceImgI,length,width);
 
@@ -92,7 +94,8 @@ int main(int argc,char **argv)
     Mod(MatriceImgM,MatriceImgR,MatriceImgI,length,width);
 
     // Application de la fonction logarithmique
-    RecalLog(MatriceImgM, length, width);
+    float c = RecalLog(MatriceImgM, length, width);
+    Mult(MatriceImgM,c,length,width);                     
   
     /*Sauvegarde de MatriceImgM sous forme d'image pgm*/
     SaveImagePgm(NAME_IMG_OUT,MatriceImgM,length,width);
@@ -103,7 +106,7 @@ int main(int argc,char **argv)
     free_fmatrix_2d(MatriceImgM);    
 
     /*Commande systeme: visualisation de Ingout.pgm*/
-    system("display image-TpIFT6150-1-Ab.pgm&");
+    system("display image-TpIFT6150-1-Ac.pgm&");
 
     /*retour sans probleme*/ 
     printf("\n C'est fini ... \n\n\n");
