@@ -1,6 +1,7 @@
 /*------------------------------------------------------*/
 /* Prog    : TpIFT6150-1-Ba.c                           */
 /* Auteur  : Sylvain Bouchard                           */
+/* Courriel: bouchsyl@iro.umontreal.ca                  */
 /* Date    : 27/09/2010                                 */
 /* version :                                            */ 
 /* langage : C                                          */
@@ -22,26 +23,86 @@
 /*------------------------------------------------*/
 #define NAME_IMG_IN  "images/D16r"
 
-#define NAME_IMG_OUT "image-TpIFT6150-1-Ba"
+#define NAME_IMG_OUT_Z0 "image-TpIFT6150-1-Ba-z0"
+#define NAME_IMG_OUT_Z1 "image-TpIFT6150-1-Ba-z1"
+#define NAME_IMG_OUT_Z6 "image-TpIFT6150-1-Ba-z6"
+#define NAME_IMG_OUT_Z16 "image-TpIFT6150-1-Ba-z16"
+
+void RecalLineaire(float** mat,int lgth,int wdth)
+{
+ int i,j;
+ float max,min;
+
+ /*Initialisation*/
+ min=mat[0][0];
+
+ /*Recherche du min*/
+  for(i=0;i<lgth;i++) for(j=0;j<wdth;j++)
+    if (mat[i][j]<min) min=mat[i][j];
+
+ /*plus min*/
+   for(i=0;i<lgth;i++) for(j=0;j<wdth;j++)
+    mat[i][j]-=min;
+
+   max=mat[0][0];
+ /*Recherche du max*/
+  for(i=0;i<lgth;i++) for(j=0;j<wdth;j++) 
+    if (mat[i][j]>max) max=mat[i][j];
+
+  printf("Min = %.2f\n", min);
+  printf("Max = %.2f\n", max);
+
+ /*Recalibre la matrice*/
+ for(i=0;i<lgth;i++) for(j=0;j<wdth;j++)
+   mat[i][j]*=(GREY_LEVEL/(max-min));      
+}
 
 void clearZones(float** imR, float** imI, int length, int width, int dist)
 {
     int i,j;
     int N_2 = length / 2;
     int M_2 = width / 2;
+    int k = dist + 1;
 
     // Clear la partie gauche des images
-    for(j = 0; j < (M_2 - dist); j++)
+    for(i = 0; i < length; i++)
     {
-        
+        for(j = 0; j <= (M_2 - k); j++)
+        {
+            imR[i][j] = 0.0f;
+            imI[i][j] = 0.0f;
+        }
     }
 
     // Clear la partie droite des images
-    for(j = (M_2 + dist); j < width; j++)
+    for(i = 0; i < length; i++)
     {
+        for(j = (M_2 + k); j < width; j++)
+        {
+            imR[i][j] = 0.0f;
+            imI[i][j] = 0.0f;
+        }
     }
 
     // Clear le haut
+    for(i = 0; i <= (N_2 - k); i++)
+    {
+        for(j = (M_2 - k); j < (M_2 + k); j++)
+        {
+            imR[i][j] = 0.0f;
+            imI[i][j] = 0.0f;
+        }
+    }
+
+    // Clear le bas
+    for(i = (N_2 + k); i < length; i++)
+    {
+        for(j = (M_2 - k); j < (M_2 + k); j++)
+        {
+            imR[i][j] = 0.0f;
+            imI[i][j] = 0.0f;
+        }
+    }
 }
 
 void clearZone(float** imR, float** imI, int length, int width, int zone)
@@ -101,6 +162,7 @@ int main(int argc,char **argv)
         }
     }
 
+    /*
     // Decalage de l'image pour obtenir un spectre centre
     int factor;
     for(i = 0; i < length; i++)
@@ -111,29 +173,28 @@ int main(int argc,char **argv)
             MatriceImgR[i][j] *= factor;
         }
     }
+    */
   
     /*FFT*/
     FFTDD(MatriceImgR,MatriceImgI,length,width);
 
-    clearZone(MatriceImgR, MatriceImgI, length, width, 3);
+    /* Troncature du spectre */
+    //clearZones(MatriceImgR,MatriceImgI,length,width,16);
 
-    /*Module*/
-    Mod(MatriceImgM,MatriceImgR,MatriceImgI,length,width);
+    /* Transformee inverse du spectre tronque */
+    IFFTDD(MatriceImgR,MatriceImgI,length,width);
 
-    /*Pour visu*/
-    Recal(MatriceImgM,length,width);
-    Mult(MatriceImgM,100.0,length,width);
-  
-    /*Sauvegarde de MatriceImgM sous forme d'image pgm*/
-    SaveImagePgm(NAME_IMG_OUT,MatriceImgM,length,width);
+    /* Recalage de l'image */
+    RecalLineaire(MatriceImgR,length,width);
+    //Mult(MatriceImgR,1.0,length,width); 
+
+    /*Sauvegarde de MatriceImgR sous forme d'image pgm*/
+    SaveImagePgm(NAME_IMG_OUT_Z0,MatriceImgR,length,width);
 
     /*Liberation memoire pour les matrices*/
     free_fmatrix_2d(MatriceImgR);
     free_fmatrix_2d(MatriceImgI); 
     free_fmatrix_2d(MatriceImgM);
-
-    /*Commande systeme: visualisation de Ingout.pgm*/
-    system("display image-TpIFT6150-1-Ba.pgm&");
 
     /*retour sans probleme*/ 
     printf("\n C'est fini ... \n\n\n");
