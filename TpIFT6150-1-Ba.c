@@ -23,6 +23,7 @@
 /*------------------------------------------------*/
 #define NAME_IMG_IN  "images/D16r"
 
+#define NAME_IMG_OUT "image-TpIFT6150-1-Ba"
 #define NAME_IMG_OUT_Z0 "image-TpIFT6150-1-Ba-z0"
 #define NAME_IMG_OUT_Z1 "image-TpIFT6150-1-Ba-z1"
 #define NAME_IMG_OUT_Z6 "image-TpIFT6150-1-Ba-z6"
@@ -55,6 +56,70 @@ void RecalLineaire(float** mat,int lgth,int wdth)
  /*Recalibre la matrice*/
  for(i=0;i<lgth;i++) for(j=0;j<wdth;j++)
    mat[i][j]*=(GREY_LEVEL/(max-min));      
+}
+
+void clearCorners(float** imR, float** imI, int length, int width, int dist)
+{
+    int i,j;
+    int N_2 = length / 2;
+    int M_2 = width / 2;
+    int k = dist + 1;
+
+    if(dist == 0)
+    {
+        imR[0][0] = 0.0f;
+        imI[0][0] = 0.0f;
+
+        return;
+    }
+
+    // Coin superieur gauche
+    for(j = 0; j <= dist; j++)
+    {
+        imR[dist][j] = 0.0f;
+        imI[dist][j] = 0.0f;
+    }
+    for(i = 0; i <= dist; i++)
+    {
+        imR[i][dist] = 0.0f;
+        imI[i][dist] = 0.0f;
+    }
+
+    // Coin superieur droit
+    for(j = (width-dist); j < width; j++)
+    {
+        imR[dist][j] = 0.0f;
+        imI[dist][j] = 0.0f;
+    }
+    for(i = 0; i <= dist; i++)
+    {
+        imR[i][width-dist] = 0.0f;
+        imI[i][width-dist] = 0.0f;
+    }
+
+    // Coin inferieur droit
+    for(j = (width-dist); j < width; j++)
+    {
+        imR[length-dist][j] = 0.0f;
+        imI[length-dist][j] = 0.0f;
+    }
+    for(i = (length-dist); i < length; i++)
+    {
+        imR[i][width-dist] = 0.0f;
+        imI[i][width-dist] = 0.0f;
+    }
+
+    // Coin inferieur gauche 
+    for(j = 0; j <= dist; j++)
+    {
+        imR[length-dist][j] = 0.0f;
+        imI[length-dist][j] = 0.0f;
+    }
+    for(i = (length-dist); i < length; i++)
+    {
+        imR[i][dist] = 0.0f;
+        imI[i][dist] = 0.0f;
+    }
 }
 
 void clearZones(float** imR, float** imI, int length, int width, int dist)
@@ -179,17 +244,20 @@ int main(int argc,char **argv)
     FFTDD(MatriceImgR,MatriceImgI,length,width);
 
     /* Troncature du spectre */
-    //clearZones(MatriceImgR,MatriceImgI,length,width,16);
+    clearCorners(MatriceImgR,MatriceImgI,length,width,3);
+
+    /*Module*/
+    Mod(MatriceImgM,MatriceImgR,MatriceImgI,length,width);
 
     /* Transformee inverse du spectre tronque */
-    IFFTDD(MatriceImgR,MatriceImgI,length,width);
+    //IFFTDD(MatriceImgR,MatriceImgI,length,width);
 
     /* Recalage de l'image */
-    RecalLineaire(MatriceImgR,length,width);
+    //Recal(MatriceImgR,length,width);
     //Mult(MatriceImgR,1.0,length,width); 
 
-    /*Sauvegarde de MatriceImgR sous forme d'image pgm*/
-    SaveImagePgm(NAME_IMG_OUT_Z0,MatriceImgR,length,width);
+    /*Sauvegarde de MatriceImgM sous forme d'image pgm*/
+    SaveImagePgm(NAME_IMG_OUT_Z1,MatriceImgM,length,width);
 
     /*Liberation memoire pour les matrices*/
     free_fmatrix_2d(MatriceImgR);
