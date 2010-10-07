@@ -21,7 +21,7 @@
 /*------------------------------------------------*/
 /* DEFINITIONS -----------------------------------*/   
 /*------------------------------------------------*/
-#define NAME_IMG_IN  "images/D16r"
+#define NAME_IMG_IN  "images/D1r"
 
 #define NAME_IMG_OUT "image-TpIFT6150-1-Ba"
 #define NAME_IMG_OUT_Z0 "image-TpIFT6150-1-Ba-z0"
@@ -243,21 +243,39 @@ int main(int argc,char **argv)
     /*FFT*/
     FFTDD(MatriceImgR,MatriceImgI,length,width);
 
-    /* Troncature du spectre */
-    clearCorners(MatriceImgR,MatriceImgI,length,width,3);
+    // Troncature des basses frequences
+/*
+    for(i = 0; i <= 1; i++)
+        clearCorners(MatriceImgR,MatriceImgI,length,width,i);
+*/
+/*
+    // Troncature des moyennes frequences
+    for(i = 2; i <= 5; i++)
+        clearCorners(MatriceImgR,MatriceImgI,length,width,i);
+*/
+/*
+    // Troncature des hautes frequences
+    for(i = 6; i <= 15; i++)
+        clearCorners(MatriceImgR,MatriceImgI,length,width,i);
+*/
+/*
+    // Troncature des tres hautes frequences
+    for(i = 16; i <= 63; i++)
+        clearCorners(MatriceImgR,MatriceImgI,length,width,i);
+*/
 
     /*Module*/
-    Mod(MatriceImgM,MatriceImgR,MatriceImgI,length,width);
+    //Mod(MatriceImgM,MatriceImgR,MatriceImgI,length,width);
 
     /* Transformee inverse du spectre tronque */
-    //IFFTDD(MatriceImgR,MatriceImgI,length,width);
+    IFFTDD(MatriceImgR,MatriceImgI,length,width);
 
     /* Recalage de l'image */
-    //Recal(MatriceImgR,length,width);
+    Recal(MatriceImgR,length,width);
     //Mult(MatriceImgR,1.0,length,width); 
 
     /*Sauvegarde de MatriceImgM sous forme d'image pgm*/
-    SaveImagePgm(NAME_IMG_OUT_Z1,MatriceImgM,length,width);
+    SaveImagePgm(NAME_IMG_OUT,MatriceImgR,length,width);
 
     /*Liberation memoire pour les matrices*/
     free_fmatrix_2d(MatriceImgR);
