@@ -61,6 +61,32 @@ float** squareImage(int length, int width, int size)
     return square;
 }
 
+float** squareCornerImage(int length, int width, int size)
+{
+    int i, j;
+    int startX = 0;
+    int endX = startX + size;
+
+    int startY = 0;
+    int endY = startY + size;
+
+    float** square = fmatrix_allocate_2d(length, width);
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < width; j++)
+        {
+            if(i >= startY && i < endY
+            && (j >= startX && j < endX))
+            {
+                square[i][j] = 255.0f;
+            }
+            else
+                square[i][j] = 0.0f;
+        }
+    }
+    return square;
+}
+
 void convolution(ImageComplexe* img, ImageComplexe* masque, ImageComplexe* conv)
 {
     int u,v,i_r,i_i,m_r,m_i;
@@ -96,6 +122,9 @@ int main(int argc,char **argv)
     float** MatriceConvR;
     float** MatriceConvI;
 
+    float** masqueR;
+    float** masqueI;
+
     // Generation d'une image carre blanc sur fond noir
     length = 128;
     width = 128;
@@ -114,13 +143,27 @@ int main(int argc,char **argv)
     MatriceConvR=fmatrix_allocate_2d(length,width);
     MatriceConvI=fmatrix_allocate_2d(length,width);
 
+    masqueR = squareImage(length, width, tailleCarre);
+    masqueI = fmatrix_allocate_2d(length,width);
+
     // Initialisation a zero de toutes les matrices
-    for(i=0;i<length;i++) 
+    for(i=0;i<length;i++)
     {
         for(j=0;j<width;j++) 
         {
 	        MatriceImgI[i][j]=0.0;
 	        MatriceImgM[i][j]=0.0;
+        }
+    }
+
+    // Decalage de l'image pour obtenir un spectre centre
+    int factor;
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < width; j++)
+        {
+            factor = pow(-1, i+j);
+            MatriceImgR[i][j] *= factor;
         }
     }
 
