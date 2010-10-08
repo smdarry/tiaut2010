@@ -1,0 +1,68 @@
+IFT6150 Automne 2008 TP2
+
+L'énoncé du tp2 ainsi que les programmes fournis se trouvent sur le site 
+du cours:
+
+http://www.iro.umontreal.ca/~mignotte/ift6150.html
+
+Le tp2 est à remettre le jour specifie par le demonstrateur (31 octobre 2008) avant 17h30.
+Pénalité de 10% par 24h de retard. 
+
+Vous devez fournir le programme suivant:
+
+     TpIFT6150-2.c
+
+qui doit produire les images demandées dans l'énoncé du tp2:
+  
+     TpIFT6150-2-gradient.pgm
+     TpIFT6150-2-suppression.pgm
+     TpIFT6150-2-canny.pgm
+     TpIFT6150-2-cannySemiAuto.pgm
+
+On doit pouvoir entrer l'écart-type du filtre gaussian ainsi que la valeur de
+ph au clavier.  Aussi, vous devez effectuer la convolution dans le domaine frequentiel
+(donc a l'aide d'une transformee de fourrier).
+
+Le programme doit compiler sous Linux avec le script fourni
+et les programmes FonctionDemo2.h et FonctionDemo2.c fournis
+(sinon, 0 pt pour l'exécution).
+
+                               *****
+
+Barême pour le TP2 (Le maximum des points alloués est indiqué ci-dessous):
+
+
+Exécution et implémentation: (60 pts)
+============================
+
+ - filtre gaussien (7 pts)
+ - calcul de la norme et de l'angle (5 pts)
+ - calcul des seuils à partir de l'histogramme (5 pts)
+ - approximation de l'angle (8 pts)
+ - suppression des non-maximaux (10 pts)
+ - hystérisis (15 pts)
+ - Style de programmation: (10 pts)
+
+
+Rapport (40 pts)
+=======
+
+- Introduction   (8 pts)
+    Description du but de TP
+    Détection et rôle des contours dans une image
+    Filtre gaussien
+- Description de la méthode utilisée pour calculer le gradient,
+  la norme et de l'angle (5 pts)
+- Dénombrer le nombre de seuils dans le filtre de Canny.(2 pts)
+- Description de la méthode utilisée pour Calculer les seuils
+  à partir de l'histogramme (3 pts)
+- Description de l'approximation de l'angle  (7 pts)
+- Description du but de la suppression des non-maximums dans
+  le filtre de Canny.(5 pts)
+- Description du but du seuillage pas hystérisis dans le filtre
+  de Canny (2 pts)
+- Présentation des résultats expérimentaux (4 pts)
+- Discussion et Conclusion (4 pts)
+
+
+Total: 100 points.
