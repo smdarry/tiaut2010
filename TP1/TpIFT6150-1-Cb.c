@@ -26,15 +26,6 @@
 #define NAME_IMG_OUT_MASK "image-TpIFT6150-1-Cb_mask"
 #define NAME_IMG_OUT_FILTER "image-TpIFT6150-1-Cb_filtered"
 
-typedef struct _ImageComplexe
-{
-    float** reel;
-    float** imag;
-
-    int length;
-    int width;
-} ImageComplexe;
-
 /**
  * Cree un masque de convolution avec le reste de l'image remplie avec des 0.
  */
@@ -64,28 +55,6 @@ float** convMasque(int length, int width, int size)
     return square;
 }
 
-void convolution(ImageComplexe* img, ImageComplexe* masque, ImageComplexe* conv)
-{
-    int u,v,i_r,i_i,m_r,m_i;
-    for(u = 0; u < img->length; u++)
-    {
-        for(v= 0; v < img->width; v++)
-        {
-            i_r = img->reel[u][v];
-            i_i = img->imag[u][v];
-
-            m_r = masque->reel[u][v];
-            m_i = masque->imag[u][v];
-
-            conv->reel[u][v] = (i_r * m_r) - (i_i * m_i);
-            conv->imag[u][v] = (i_i * m_r) + (i_r * m_i);
-        }
-    }
-
-    // FFT inverse
-    IFFTDD(conv->reel, conv->imag, conv->length, conv->width);
-}
-
 float RecalLog(float** mat, int length, int width)
 {
     int i,j;
@@ -109,6 +78,52 @@ float RecalLog(float** mat, int length, int width)
         mat[i][j] = log(mat[i][j] + 1);
 
     return c;
+}
+
+void shift(float** MatriceInR,float** MatriceInI,int length,int width,int shiftLength,int shiftWidth)
+{
+    float** MatriceShiftR = fmatrix_allocate_2d(length,width);
+    float** MatriceShiftI = fmatrix_allocate_2d(length,width);
+    float** MatriceTmpR = fmatrix_allocate_2d(length,width);
+    float** MatriceTmpI = fmatrix_allocate_2d(length,width);
+
+    // Calcul de la matrice de decalage
+    double theta;
+    int u,v;
+    for(u = 0; u < length; u++)
+    {
+        for(v = 0; v < width; v++)
+        {
+            theta = 2 * PI;
+            
+            double u1 = (u * shiftLength) / (double)length;
+            double v1 = (v * shiftWidth) / (double)width;
+
+            theta *= (u1 + v1);
+
+            MatriceShiftR[u][v] = cos(theta);
+            MatriceShiftI[u][v] = -sin(theta); 
+        }
+    }
+
+    // Application du facteur de decalage
+    MultMatrix(MatriceTmpR,MatriceTmpI,MatriceInR,MatriceInI,MatriceShiftR,MatriceShiftI,length,width);
+
+    // Copie de la matrice resultante dans l'input
+    int i,j;
+    for(i=0;i<length;i++)
+    {
+        for(j=0;j<width;j++)
+        {
+            MatriceInR[i][j] = MatriceTmpR[i][j];
+            MatriceInI[i][j] = MatriceTmpI[i][j];
+        }
+    }
+
+    free_fmatrix_2d(MatriceShiftR);
+    free_fmatrix_2d(MatriceShiftI);
+    free_fmatrix_2d(MatriceTmpR);
+    free_fmatrix_2d(MatriceTmpI);
 }
 
 /*------------------------------------------------*/
@@ -173,29 +188,17 @@ int main(int argc,char **argv)
     // FFT du masque
     FFTDD(masqueR,masqueI,masqueLength,masqueWidth);
 
-    // Multiplication complexe de la transformee avec elle-meme
-    ImageComplexe img, conv;
-    img.reel = MatriceImgR;
-    img.imag = MatriceImgI;
-    img.length = length;
-    img.width = width;
+    // Multiplication complexe des TF
+    MultMatrix(MatriceConvR,MatriceConvI,MatriceImgR,MatriceImgI,masqueR,masqueI,length,width);
 
-    conv.reel = MatriceConvR;
-    conv.imag = MatriceConvI;
-    conv.length = length;
-    conv.width = width;
+    // Decalage du spectre de la moitiee de la taille du masque
+    shift(MatriceConvR,MatriceConvI,length,width,tailleMasque/2,tailleMasque/2);
 
-    ImageComplexe masque;
-    masque.reel = masqueR;
-    masque.imag = masqueI;
-    masque.length = length;
-    masque.width = width;
-
-    convolution(&img, &masque, &conv);
+    IFFTDD(MatriceConvR,MatriceConvI,length,width);
 
     // Changement de dynamique
-    float c = RecalLog(MatriceConvR,length,width);
-    Mult(MatriceConvR,c,length,width);                     
+    RecalLog(MatriceConvR,length,width);
+    Recal(MatriceConvR,length,width);
 
     // Sauvegarde de la convolution
     SaveImagePgm(NAME_IMG_OUT_FILTER,MatriceConvR,length,width);
