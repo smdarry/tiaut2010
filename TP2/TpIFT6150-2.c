@@ -59,6 +59,50 @@ float** padWithZeros(float** mask, int mLength, int mWidth, int length, int widt
     return padded;
 }
 
+void gradient(float** image, float** gradX, float** gradY, int length, int width)
+{
+    int i,j;
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < width; j++)
+        {
+            if(j == 0 || j == width-1)
+                gradX[i][j] = 0;
+            else
+                gradX[i][j] = image[i][j+1] - image[i][j-1];
+
+            if(i == 0 || i == length-1)
+                gradY[i][j] = 0;
+            else
+                gradY[i][j] = image[i+1][j] - image[i-1][j];
+        }
+    }
+}
+
+void gradientMagnitude(float** gradX, float** gradY, float** magn, int length, int width)
+{
+    int i,j;
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < width; j++)
+        {
+            magn[i][j] = sqrt(SQUARE(gradX[i][j]) + SQUARE(gradY[i][j]));
+        }
+    }
+}
+
+void gradientAngle(float** gradX, float** gradY, float** angle, int length, int width)
+{
+    int i,j;
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < width; j++)
+        {
+            angle[i][j] = atan2(-gradY[i][j], gradX[i][j]) * 180 / PI;
+        }
+    }
+}
+
 /*------------------------------------------------*/
 /* PROGRAMME PRINCIPAL   -------------------------*/                     
 /*------------------------------------------------*/
@@ -98,7 +142,9 @@ int main(int argc,int** argv)
     int halfMaskWidth = 2;
     int maskSize = halfMaskWidth*2 + 1;
 
+    ////////////////////////////////////////////
     // Etape 1: application d'un filtre Gaussien
+    //
     float** mask = gaussianMask(halfMaskWidth, sigma);
     float** gaussMaskR = padWithZeros(mask, maskSize, maskSize, length, width);
 
@@ -110,10 +156,23 @@ int main(int argc,int** argv)
     MultMatrix(convR,convI,MatriceImgR,MatriceImgI,gaussMaskR,gaussMaskI,length,width);
     IFFTDD(convR,convI,length,width);
 
-    Recal(convR, length, width);
-
     // Sauvegarde de l'image filtree
     SaveImagePgm(NAME_IMG_CANNY,convR,length,width);
+
+    /////////////////////////////////////////////
+    // Etape 2: calcul du gradient a chaque pixel
+    //
+    float** gradientX = fmatrix_allocate_2d(length,width);
+    float** gradientY = fmatrix_allocate_2d(length,width);
+    float** gradientMagn = fmatrix_allocate_2d(length,width);
+    float** gradientDir = fmatrix_allocate_2d(length,width);
+
+    gradient(convR, gradientX, gradientY, length, width);
+    gradientMagnitude(gradientX, gradientY, gradientMagn, length, width);
+    gradientAngle(gradientX, gradientY, gradientDir, length, width);
+
+    // Sauvegarde de l'image du gradient
+    SaveImagePgm(NAME_IMG_GRADIENT,gradientMagn,length,width);
 
   /* Sauvegarder les images 
      TpIFT6150-2-gradient.pgm
