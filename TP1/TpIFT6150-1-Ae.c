@@ -52,6 +52,39 @@ float** squareImage(int length, int width, int size)
     return square;
 }
 
+void shiftSpatial(float** MatriceR,int length,int width)
+{
+    int factor, i, j;
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < width; j++)
+        {
+            factor = pow(-1, i+j);
+            MatriceR[i][j] *= factor;
+        }
+    }
+}
+
+void RecalLog(float** mat, int length, int width)
+{
+    int i,j;
+    float max,min;
+
+    /*Recherche du min*/
+    min=mat[0][0];
+    for(i=0;i<length;i++) for(j=0;j<width;j++)
+        if (mat[i][j]<min) min=mat[i][j];
+
+    /*Recherche du max*/
+    max=mat[0][0];
+    for(i=0;i<length;i++) for(j=0;j<width;j++) 
+        if (mat[i][j]>max) max=mat[i][j];
+
+    /*Recalibre la matrice*/
+    for(i=0;i<length;i++) for(j=0;j<width;j++)
+        mat[i][j] = log10(fabs(mat[i][j]) + 1);
+}
+
 /*------------------------------------------------*/
 /* PROGRAMME PRINCIPAL   -------------------------*/                     
 /*------------------------------------------------*/
@@ -90,15 +123,7 @@ int main(int argc,char **argv)
     }
 
     // Decalage de l'image pour obtenir un spectre au centre
-    int factor;
-    for(i = 0; i < length; i++)
-    {
-        for(j = 0; j < width; j++)
-        {
-            factor = pow(-1, i+j);
-            MatriceImgR[i][j] *= factor;
-        }
-    }
+    shiftSpatial(MatriceImgR,length,width);
   
     // FFT
     FFTDD(MatriceImgR,MatriceImgI,length,width);
@@ -107,8 +132,9 @@ int main(int argc,char **argv)
     Mod(MatriceImgM,MatriceImgR,MatriceImgI,length,width);
 
     // Pour visu
+    //RecalLog(MatriceImgM,length,width);
     Recal(MatriceImgM,length,width);
-    Mult(MatriceImgM,100.0,length,width);                     
+    Mult(MatriceImgM,20,length,width);
   
     // Sauvegarde de MatriceImgM sous forme d'image pgm
     SaveImagePgm(NAME_SPC_OUT,MatriceImgM,length,width);
@@ -117,9 +143,6 @@ int main(int argc,char **argv)
     free_fmatrix_2d(MatriceImgR);
     free_fmatrix_2d(MatriceImgI); 
     free_fmatrix_2d(MatriceImgM);
-
-    // Commande systeme: visualisation de Ingout.pgm
-    system("display image-TpIFT6150-1-Ae-spc.pgm&");
 
     // Retour sans probleme
     printf("\n C'est fini ... \n\n\n");
