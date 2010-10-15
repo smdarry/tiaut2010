@@ -24,10 +24,10 @@
 #define NAME_IMG_IN  "images/D1r"
 
 #define NAME_IMG_OUT "image-TpIFT6150-1-Ba"
-#define NAME_IMG_OUT_Z0 "image-TpIFT6150-1-Ba-z0"
-#define NAME_IMG_OUT_Z1 "image-TpIFT6150-1-Ba-z1"
-#define NAME_IMG_OUT_Z6 "image-TpIFT6150-1-Ba-z6"
-#define NAME_IMG_OUT_Z16 "image-TpIFT6150-1-Ba-z16"
+#define NAME_IMG_OUT_BASSES "image-TpIFT6150-1-Ba_0_1"
+#define NAME_IMG_OUT_MOYS "image-TpIFT6150-1-Ba_2_5"
+#define NAME_IMG_OUT_HAUTES "image-TpIFT6150-1-Ba_6_15"
+#define NAME_IMG_OUT_THAUTES "image-TpIFT6150-1-Ba_16_63"
 
 void RecalLineaire(float** mat,int lgth,int wdth)
 {
@@ -201,86 +201,80 @@ void clearZone(float** imR, float** imI, int length, int width, int zone)
     }
 }
 
-/*------------------------------------------------*/
+void imageTronquee(float** imgR, float** imgI, int length, int width, int zoneStart, int zoneEnd, char* imgName)
+{
+    // FFT
+    FFTDD(imgR,imgI,length,width);
+
+    // Troncature des basses frequences
+    int i;
+    for(i = zoneStart; i <= zoneEnd; i++)
+        clearCorners(imgR,imgI,length,width,i);
+
+    // Transformee inverse du spectre tronque
+    IFFTDD(imgR,imgI,length,width);
+
+    // Recalage et sauvegarde de l'image
+    Recal(imgR,length,width);
+    SaveImagePgm(imgName,imgR,length,width);
+}
+
 /* PROGRAMME PRINCIPAL   -------------------------*/                     
 /*------------------------------------------------*/
 int main(int argc,char **argv)
 {
     int i,j,k;
     int length,width;
-    float** MatriceImgR;
-    float** MatriceImgI;
-    float** MatriceImgM;
 
-    /*Allocation memoire pour la matrice image*/
-    MatriceImgR=LoadImagePgm(NAME_IMG_IN,&length,&width);
-    MatriceImgI=fmatrix_allocate_2d(length,width);
-    MatriceImgM=fmatrix_allocate_2d(length,width);
+    // Image des basses frequences
+    float** imgBassesR = LoadImagePgm(NAME_IMG_IN,&length,&width);
+    float** imgBassesI = fmatrix_allocate_2d(length,width);
 
-    /*Initialisation a zero de toutes les matrices */
+    // Image des frequences moyennes
+    float** imgMoysR = LoadImagePgm(NAME_IMG_IN,&length,&width);
+    float** imgMoysI = fmatrix_allocate_2d(length,width);
+
+    // Image des frequences hautes
+    float** imgHautesR = LoadImagePgm(NAME_IMG_IN,&length,&width);
+    float** imgHautesI = fmatrix_allocate_2d(length,width);
+
+    // Image des frequences tres hautes
+    float** imgTresHautesR = LoadImagePgm(NAME_IMG_IN,&length,&width);
+    float** imgTresHautesI = fmatrix_allocate_2d(length,width);
+
+    /*Initialisation des parties imaginaires */
     for(i=0;i<length;i++) 
     {
         for(j=0;j<width;j++) 
         {
-	        MatriceImgI[i][j]=0.0;
-	        MatriceImgM[i][j]=0.0;
+            imgBassesI[i][j] = 0.0;
+            imgMoysI[i][j] = 0.0;
+            imgHautesI[i][j] = 0.0;
+            imgTresHautesI[i][j] = 0.0;
         }
     }
-
-    /*
-    // Decalage de l'image pour obtenir un spectre centre
-    int factor;
-    for(i = 0; i < length; i++)
-    {
-        for(j = 0; j < width; j++)
-        {
-            factor = pow(-1, i+j);
-            MatriceImgR[i][j] *= factor;
-        }
-    }
-    */
-  
-    /*FFT*/
-    FFTDD(MatriceImgR,MatriceImgI,length,width);
 
     // Troncature des basses frequences
-/*
-    for(i = 0; i <= 1; i++)
-        clearCorners(MatriceImgR,MatriceImgI,length,width,i);
-*/
-/*
-    // Troncature des moyennes frequences
-    for(i = 2; i <= 5; i++)
-        clearCorners(MatriceImgR,MatriceImgI,length,width,i);
-*/
-/*
-    // Troncature des hautes frequences
-    for(i = 6; i <= 15; i++)
-        clearCorners(MatriceImgR,MatriceImgI,length,width,i);
-*/
-/*
-    // Troncature des tres hautes frequences
-    for(i = 16; i <= 63; i++)
-        clearCorners(MatriceImgR,MatriceImgI,length,width,i);
-*/
+    imageTronquee(imgBassesR,imgBassesI,length,width,0,1,NAME_IMG_OUT_BASSES);
 
-    /*Module*/
-    //Mod(MatriceImgM,MatriceImgR,MatriceImgI,length,width);
+    // Troncature des frequences moyennes
+    imageTronquee(imgMoysR,imgMoysI,length,width,2,5,NAME_IMG_OUT_MOYS);
 
-    /* Transformee inverse du spectre tronque */
-    IFFTDD(MatriceImgR,MatriceImgI,length,width);
+    // Troncature des frequences hautes 
+    imageTronquee(imgMoysR,imgMoysI,length,width,6,15,NAME_IMG_OUT_HAUTES);
 
-    /* Recalage de l'image */
-    Recal(MatriceImgR,length,width);
-    //Mult(MatriceImgR,1.0,length,width); 
-
-    /*Sauvegarde de MatriceImgM sous forme d'image pgm*/
-    SaveImagePgm(NAME_IMG_OUT,MatriceImgR,length,width);
+    // Troncature des frequences tres hautes 
+    imageTronquee(imgMoysR,imgMoysI,length,width,16,63,NAME_IMG_OUT_THAUTES);
 
     /*Liberation memoire pour les matrices*/
-    free_fmatrix_2d(MatriceImgR);
-    free_fmatrix_2d(MatriceImgI); 
-    free_fmatrix_2d(MatriceImgM);
+    free_fmatrix_2d(imgBassesR);
+    free_fmatrix_2d(imgBassesI);
+    free_fmatrix_2d(imgMoysR);
+    free_fmatrix_2d(imgMoysI);
+    free_fmatrix_2d(imgHautesR);
+    free_fmatrix_2d(imgHautesI);
+    free_fmatrix_2d(imgTresHautesR);
+    free_fmatrix_2d(imgTresHautesI);
 
     /*retour sans probleme*/ 
     printf("\n C'est fini ... \n\n\n");
