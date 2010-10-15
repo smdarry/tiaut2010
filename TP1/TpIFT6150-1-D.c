@@ -37,6 +37,30 @@ void genererImage(float** imR, int length, int width)
     }
 }
 
+void genererImage2(float** imR, int length, int width)
+{
+    int x, y;
+    for(x = 0; x < length; x++)
+    {
+        for(y = 0; y < width; y++)
+        {
+            imR[x][y] = 128 + 127*cos((2*PI*(25*4*x + 31*4*y))/128);
+        }
+    }
+}
+
+void genererSinus(float** imR, int length, int width)
+{
+    int x, y;
+    for(x = 0; x < length; x++)
+    {
+        for(y = 0; y < width; y++)
+        {
+            imR[x][y] = 128 + 127*cos((2*PI*2*x)/128);
+        }
+    }
+}
+
 void echantillonne(float** imR,int length,int width,int interval,float** outImR)
 {
     int x, y;
@@ -47,35 +71,6 @@ void echantillonne(float** imR,int length,int width,int interval,float** outImR)
             outImR[x/interval][y/interval] = imR[x][y];
         }
     }
-}
-
-void RecalLineaire(float** mat,int lgth,int wdth)
-{
- int i,j;
- float max,min;
-
- /*Initialisation*/
- min=mat[0][0];
-
- /*Recherche du min*/
-  for(i=0;i<lgth;i++) for(j=0;j<wdth;j++)
-    if (mat[i][j]<min) min=mat[i][j];
-
- /*plus min*/
-   for(i=0;i<lgth;i++) for(j=0;j<wdth;j++)
-    mat[i][j]-=min;
-
-   max=mat[0][0];
- /*Recherche du max*/
-  for(i=0;i<lgth;i++) for(j=0;j<wdth;j++) 
-    if (mat[i][j]>max) max=mat[i][j];
-
-  printf("Min = %.2f\n", min);
-  printf("Max = %.2f\n", max);
-
- /*Recalibre la matrice*/
- for(i=0;i<lgth;i++) for(j=0;j<wdth;j++)
-   mat[i][j]*=(GREY_LEVEL/(max-min));      
 }
 
 /*------------------------------------------------*/
@@ -98,7 +93,8 @@ int main(int argc,char **argv)
     MatriceImgM=fmatrix_allocate_2d(length,width);
 
     /* Generation d'une image */
-    genererImage(MatriceImgR, length, width);
+    //genererImage(MatriceImgR, length, width);
+    genererSinus(MatriceImgR, length, width);
 
     // Initialisation a zero de toutes les matrices
     for(i=0;i<length;i++) 
