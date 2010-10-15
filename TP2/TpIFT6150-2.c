@@ -91,14 +91,44 @@ void gradientMagnitude(float** gradX, float** gradY, float** magn, int length, i
     }
 }
 
-void gradientAngle(float** gradX, float** gradY, float** angle, int length, int width)
+void gradientAngle(float** gradX, float** gradY, float** angle, float** angleApprox, int length, int width)
 {
+    float a, b;
     int i,j;
     for(i = 0; i < length; i++)
     {
         for(j = 0; j < width; j++)
         {
-            angle[i][j] = atan2(-gradY[i][j], gradX[i][j]) * 180 / PI;
+            b = angle[i][j] = atan2(-gradY[i][j], gradX[i][j]) * 180 / PI;
+            if(angle[i][j] < 0)
+                angle[i][j] = 180.0 + angle[i][j];
+
+            // Quantisation de l'angle selon 4 directions [0,45,90,135]
+            a  = angle[i][j];
+
+            if((a >= 0 && a <= 22.5) || (a > 157.5 && a <= 180.0))
+                angleApprox[i][j] = 0.0;
+            else if(a > 22.5 && a <= 67.5)
+                angleApprox[i][j] = 45.0;
+            else if(a > 67.5 && a <= 112.5)
+                angleApprox[i][j] = 90.0;
+            else if(a > 112.5 && a <= 157.5)
+                angleApprox[i][j] = 135.0;
+        }
+    }
+}
+
+void deleteNonMaximum(float** imgIn, int length, int width, float** contourAngles, float** imgOut)
+{
+    float gradAngle;
+
+    int i,j;
+    for(i = 0; i < length; i++)
+    {
+        for(j = 0; j < width; j++)
+        {
+            gradAngle = contourAngle[i][j];
+            
         }
     }
 }
@@ -166,10 +196,14 @@ int main(int argc,int** argv)
     float** gradientY = fmatrix_allocate_2d(length,width);
     float** gradientMagn = fmatrix_allocate_2d(length,width);
     float** gradientDir = fmatrix_allocate_2d(length,width);
+    float** contourDir = fmatrix_allocate_2d(length,width);
 
     gradient(convR, gradientX, gradientY, length, width);
     gradientMagnitude(gradientX, gradientY, gradientMagn, length, width);
-    gradientAngle(gradientX, gradientY, gradientDir, length, width);
+    gradientAngle(gradientX, gradientY, gradientDir, contourDir, length, width);
+
+    // Suppression des non-maximums
+    deleteNonMaximum(convR,contourDir,contours);
 
     // Sauvegarde de l'image du gradient
     SaveImagePgm(NAME_IMG_GRADIENT,gradientMagn,length,width);
