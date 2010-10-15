@@ -24,10 +24,10 @@
 #define NAME_IMG_IN_1  "images/D11r"
 #define NAME_IMG_IN_2  "images/D46r"
 
-#define NAME_IMG_OUT_1 "image-TpIFT6150-1-Ac-1"
-#define NAME_IMG_OUT_2 "image-TpIFT6150-1-Ac-2"
+#define NAME_IMG_OUT_1 "image-TpIFT6150-1-Ad-1"
+#define NAME_IMG_OUT_2 "image-TpIFT6150-1-Ad-2"
 
-void RecalLog(float** mat, int length, int width)
+float RecalLog(float** mat, int length, int width)
 {
     int i,j;
     float max,min;
@@ -43,11 +43,13 @@ void RecalLog(float** mat, int length, int width)
         if (mat[i][j]>max) max=mat[i][j];
 
     /* Calcule le facteur de calibation */
-    float c = GREY_LEVEL / log(max - min + 1);
+    float c = GREY_LEVEL / log10(max - min + 1);
 
     /*Recalibre la matrice*/
     for(i=0;i<length;i++) for(j=0;j<width;j++)
-        mat[i][j] = c * log(mat[i][j] + 1);
+        mat[i][j] = log10(mat[i][j] + 1);
+
+    return c;
 }
 
 void AppliqueFFT(char* fichierImage, char* output)
@@ -92,13 +94,14 @@ void AppliqueFFT(char* fichierImage, char* output)
 
     // Application de la fonction logarithmique
     RecalLog(MatriceImgM, length, width);
+    Recal(MatriceImgM, length, width);
 
     /*Sauvegarde de MatriceImgM sous forme d'image pgm*/
     SaveImagePgm(output,MatriceImgM,length,width);
 
     /*Liberation memoire pour les matrices*/
     free_fmatrix_2d(MatriceImgR);
-    free_fmatrix_2d(MatriceImgI); 
+    free_fmatrix_2d(MatriceImgI);
     free_fmatrix_2d(MatriceImgM);
 }
 

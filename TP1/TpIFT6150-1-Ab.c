@@ -80,9 +80,6 @@ int main(int argc,char **argv)
     free_fmatrix_2d(MatriceImgI); 
     free_fmatrix_2d(MatriceImgM);    
 
-    /*Commande systeme: visualisation de Ingout.pgm*/
-    system("display image-TpIFT6150-1-Ab.pgm&");
-
     /*retour sans probleme*/ 
     printf("\n C'est fini ... \n\n\n");
     return 0; 	 

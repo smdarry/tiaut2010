@@ -60,55 +60,27 @@ int main(int argc,char **argv)
     float** MatriceImgR;
     float** MatriceImgI;
     float** MatriceImgM;
+    char filename[255];
 
+    printf("Veuillez entrer le nom de l'image a charger: ");
+    scanf("%s", filename);
+    
     /*Allocation memoire pour la matrice image*/
-    MatriceImgR=LoadImagePgm(NAME_IMG_IN,&length,&width);
+    MatriceImgR=LoadImagePgm(filename,&length,&width);
     MatriceImgI=fmatrix_allocate_2d(length,width);
-    MatriceImgM=fmatrix_allocate_2d(length,width);
-
-    /*Initialisation a zero de toutes les matrices */
-    for(i=0;i<length;i++) 
-    {
-        for(j=0;j<width;j++) 
-        {
-	        MatriceImgI[i][j]=0.0;
-	        MatriceImgM[i][j]=0.0;
-        }
-    }
-
-    // Decalage de l'image pour obtenir un spectre centre
-    int factor;
-    for(i = 0; i < length; i++)
-    {
-        for(j = 0; j < width; j++)
-        {
-            factor = pow(-1, i+j);
-            MatriceImgR[i][j] *= factor;
-        }
-    }
-
-    /*FFT*/
-    FFTDD(MatriceImgR,MatriceImgI,length,width);
-
-    /*Module*/
-    Mod(MatriceImgM,MatriceImgR,MatriceImgI,length,width);
 
     // Application de la fonction logarithmique
-    float c = RecalLog(MatriceImgM, length, width);
-    Mult(MatriceImgM,c,length,width);                     
+    RecalLog(MatriceImgR, length, width);
+    Recal(MatriceImgR, length, width);
   
-    /*Sauvegarde de MatriceImgM sous forme d'image pgm*/
-    SaveImagePgm(NAME_IMG_OUT,MatriceImgM,length,width);
+    /*Sauvegarde de MatriceImgR sous forme d'image pgm*/
+    SaveImagePgm(NAME_IMG_OUT,MatriceImgR,length,width);
 
     /*Liberation memoire pour les matrices*/
     free_fmatrix_2d(MatriceImgR);
-    free_fmatrix_2d(MatriceImgI); 
-    free_fmatrix_2d(MatriceImgM);    
-
-    /*Commande systeme: visualisation de Ingout.pgm*/
-    system("display image-TpIFT6150-1-Ac.pgm&");
+    free_fmatrix_2d(MatriceImgI);
 
     /*retour sans probleme*/ 
     printf("\n C'est fini ... \n\n\n");
-    return 0; 	 
+    return 0;
 }
