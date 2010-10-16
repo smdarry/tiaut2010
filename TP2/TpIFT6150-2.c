@@ -66,12 +66,12 @@ void gradient(float** image, float** gradX, float** gradY, int length, int width
     {
         for(j = 0; j < width; j++)
         {
-            if(j == 0 || j == width-1)
+            if(j == width-1)
                 gradX[i][j] = 0;
             else
                 gradX[i][j] = image[i][j+1] - image[i][j-1];
 
-            if(i == 0 || i == length-1)
+            if(i == length-1)
                 gradY[i][j] = 0;
             else
                 gradY[i][j] = image[i+1][j] - image[i-1][j];
@@ -91,6 +91,27 @@ void gradientMagnitude(float** gradX, float** gradY, float** magn, int length, i
     }
 }
 
+float quantize(float a)
+{
+    float qa;
+
+    if(a > 180.0)
+        a = a - 180.0;
+
+    if((a >= 0 && a <= 22.5))
+        qa = 0.0;
+    else if(a > 22.5 && a <= 67.5)
+        qa = 45.0;
+    else if(a > 67.5 && a <= 112.5)
+        qa = 90.0;
+    else if(a > 112.5 && a <= 157.5)
+        qa = 135.0;
+    else if(a > 157.5 && a <= 180.0)
+        qa = 0.0;
+
+    return qa;
+}
+
 void gradientAngle(float** gradX, float** gradY, float** angle, float** angleApprox, int length, int width)
 {
     float a, b;
@@ -104,31 +125,58 @@ void gradientAngle(float** gradX, float** gradY, float** angle, float** angleApp
                 angle[i][j] = 180.0 + angle[i][j];
 
             // Quantisation de l'angle selon 4 directions [0,45,90,135]
-            a  = angle[i][j];
-
-            if((a >= 0 && a <= 22.5) || (a > 157.5 && a <= 180.0))
-                angleApprox[i][j] = 0.0;
-            else if(a > 22.5 && a <= 67.5)
-                angleApprox[i][j] = 45.0;
-            else if(a > 67.5 && a <= 112.5)
-                angleApprox[i][j] = 90.0;
-            else if(a > 112.5 && a <= 157.5)
-                angleApprox[i][j] = 135.0;
+            angleApprox[i][j] = quantize(angle[i][j]);
         }
     }
 }
 
-void deleteNonMaximum(float** imgIn, int length, int width, float** contourAngles, float** imgOut)
+inline int isGreaterThan(float** imgIn, int i, int j, float angle)
+{
+    float courant = imgIn[i][j];
+    float voisin1, voisin2;
+
+    if(angle == 0.0)
+    {
+        voisin1 = imgIn[i][j+1];
+        voisin2 = imgIn[i][j-1];
+    }
+    else if(angle == 45.0)
+    {
+        voisin1 = imgIn[i+1][j+1];
+        voisin2 = imgIn[i-1][j-1];
+    }
+    else if(angle == 90.0)
+    {
+        voisin1 = imgIn[i+1][j];
+        voisin2 = imgIn[i-1][j];
+    }
+    else if(angle == 135.0)
+    {
+        voisin1 = imgIn[i+1][j-1];
+        voisin2 = imgIn[i-1][j+1];
+    }
+
+    if(courant > voisin1 && courant > voisin2)
+        return 1;
+
+    return 0;
+}
+
+void deleteNonMaximums(float** imgIn, float** contourAngles, int length, int width)
 {
     float gradAngle;
 
     int i,j;
-    for(i = 0; i < length; i++)
+    for(i = 1; i < length-1; i++)
     {
-        for(j = 0; j < width; j++)
+        for(j = 1; j < width-1; j++)
         {
-            gradAngle = contourAngle[i][j];
-            
+            gradAngle = quantize(contourAngles[i][j] + 90);
+            if(!isGreaterThan(imgIn, i, j, gradAngle))
+            {
+                // Suppression du contour
+                imgIn[i][j] = 0.0;
+            }
         }
     }
 }
@@ -169,7 +217,7 @@ int main(int argc,int** argv)
     }
 
     /* Implementer detecteur de Canny */
-    int halfMaskWidth = 2;
+    int halfMaskWidth = 16;
     int maskSize = halfMaskWidth*2 + 1;
 
     ////////////////////////////////////////////
@@ -195,18 +243,21 @@ int main(int argc,int** argv)
     float** gradientX = fmatrix_allocate_2d(length,width);
     float** gradientY = fmatrix_allocate_2d(length,width);
     float** gradientMagn = fmatrix_allocate_2d(length,width);
-    float** gradientDir = fmatrix_allocate_2d(length,width);
-    float** contourDir = fmatrix_allocate_2d(length,width);
+    float** gradientAngles = fmatrix_allocate_2d(length,width);
+    float** contourAngles = fmatrix_allocate_2d(length,width);
 
     gradient(convR, gradientX, gradientY, length, width);
     gradientMagnitude(gradientX, gradientY, gradientMagn, length, width);
-    gradientAngle(gradientX, gradientY, gradientDir, contourDir, length, width);
-
-    // Suppression des non-maximums
-    deleteNonMaximum(convR,contourDir,contours);
+    gradientAngle(gradientX, gradientY, gradientAngles, contourAngles, length, width);
 
     // Sauvegarde de l'image du gradient
     SaveImagePgm(NAME_IMG_GRADIENT,gradientMagn,length,width);
+
+    // Suppression des non-maximums
+    deleteNonMaximums(gradientMagn,contourAngles,length,width);
+
+    // Sauvegarde de l'image des non-maximum supprimes
+    SaveImagePgm(NAME_IMG_SUPPRESSION,gradientMagn,length,width);
 
   /* Sauvegarder les images 
      TpIFT6150-2-gradient.pgm
